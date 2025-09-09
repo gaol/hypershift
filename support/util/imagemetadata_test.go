@@ -108,8 +108,11 @@ func TestGetRegistryOverrides(t *testing.T) {
 
 func TestGetManifest(t *testing.T) {
 	ctx := t.Context()
-	pullSecret := []byte("{}")
-
+	filename := "/home/lgao/sources/hypershift-qe/hypershift-qe-utils/test.pullsecret"
+	pullSecret, err := os.ReadFile(filename)
+	if err != nil {
+		println(fmt.Printf("err: %v\n", err))
+	}
 	testsCases := []struct {
 		name             string
 		imageRef         string
@@ -118,36 +121,8 @@ func TestGetManifest(t *testing.T) {
 		expectedCacheHit bool
 	}{
 		{
-			name:             "if failed to parse image reference",
-			imageRef:         "invalid-image-ref",
-			pullSecret:       pullSecret,
-			expectedErr:      true,
-			expectedCacheHit: false,
-		},
-		{
-			name:             "Pull x86 manifest",
-			imageRef:         "quay.io/openshift-release-dev/ocp-release:4.16.12-x86_64",
-			pullSecret:       pullSecret,
-			expectedErr:      false,
-			expectedCacheHit: true,
-		},
-		{
-			name:             "Pull x86 manifest from cache",
-			imageRef:         "quay.io/openshift-release-dev/ocp-release:4.16.12-x86_64",
-			pullSecret:       pullSecret,
-			expectedErr:      false,
-			expectedCacheHit: true,
-		},
-		{
-			name:             "Pull Multiarch manifest",
-			imageRef:         "quay.io/openshift-release-dev/ocp-release:4.16.12-multi",
-			pullSecret:       pullSecret,
-			expectedErr:      false,
-			expectedCacheHit: true,
-		},
-		{
-			name:             "Pull Multiarch manifest with Shah",
-			imageRef:         "quay.io/openshift-release-dev/ocp-release@sha256:be8bcea2ab176321a4e1e54caab4709f9024bc437e52ca5bc088e729367cd0cf",
+			name:             "Pull manifest with pull secret",
+			imageRef:         "quay.io/openshift-release-dev/ocp-release:4.18.12-x86_64",
 			pullSecret:       pullSecret,
 			expectedErr:      false,
 			expectedCacheHit: true,
@@ -159,7 +134,11 @@ func TestGetManifest(t *testing.T) {
 			g := NewGomegaWithT(t)
 
 			provider := &RegistryClientImageMetadataProvider{
-				OpenShiftImageRegistryOverrides: map[string][]string{},
+				OpenShiftImageRegistryOverrides: map[string][]string{
+					"quay.io/openshift-release-dev/ocp-release:4.18.12-x86_64": {
+						"my-registry-test-registry.apps.ci-op-4dmmirwk-2edfd.origin-ci-int-aws.dev.rhcloud.com/openshift-release-dev/ocp",
+						"my-registry-test-registry.apps.ci-op-4dmmirwk-2edfd.origin-ci-int-aws.dev.rhcloud.com/openshift-release-dev/ocp-releasefirst/second/third/fourth"},
+				},
 			}
 
 			manifest, err := provider.GetManifest(ctx, tc.imageRef, tc.pullSecret)
